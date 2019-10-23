@@ -282,7 +282,7 @@ public class KThread {
 	boolean intStatus = Machine.interrupt().disable();
 	// Return immediately if status finished
 	// If status unfinished: Sleep until done, then return
-	if(currentThread.status != statusFinished)
+	if(this.currentThread.status != statusFinished)
 		sleep();
 	// Re-enable interrupts and return
 	Machine.interrupt().restore(intStatus);
