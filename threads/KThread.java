@@ -274,15 +274,20 @@ public class KThread {
      */
     public void join() {
 	Lib.debug(dbgThread, "Joining to thread: " + toString());
+
 	Lib.assertTrue(this != currentThread);
-	Machine.interrupt().disabled();
-	Lib.assertTrue(Machine.interrupt().disabled());
 	
-	if(this.currentThread.status != statusFinish)//if this thread is finished, go
-		sleep();//sleep
-	}
-	Machine.interrupt().enable();
+	// Answer (finished?)
+	// Disable interrupts
+	boolean intStatus = Machine.interrupt().disable();
+	// Return immediately if status finished
+	// If status unfinished: Yield until done, then return
+	if(this.status != statusFinished)
+		KThread.yield();
+	// Re-enable interrupts and return
+	Machine.interrupt().restore(intStatus);
 	return;
+
     }
 
     /**
@@ -439,7 +444,7 @@ public class KThread {
     private TCB tcb;
 
     /**
-     * Unique identifer for this thread. Used to deterministically compare
+     * Unique identifier for this thread. Used to deterministically compare
      * threads.
      */
     private int id = numCreated++;
@@ -450,4 +455,15 @@ public class KThread {
     private static KThread currentThread = null;
     private static KThread toBeDestroyed = null;
     private static KThread idleThread = null;
+    // Added
+	public int getID() {
+    	return id;
+    }
+    public void V() {
+    	id++;
+    }
+    public void P() {
+    	id--;
+    }
+	// End added
 }
