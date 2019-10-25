@@ -14,10 +14,13 @@ public class Alarm {
      * <p><b>Note</b>: Nachos will not function correctly with more than one
      * alarm.
      */
+	private TreeMap<Long, KThread> nextThread;
+	
     public Alarm() {
 	Machine.timer().setInterruptHandler(new Runnable() {
 		public void run() { timerInterrupt(); }
 	    });
+	nextThread = new TreeMap<Long, KThread>();
     }
 
     /**
@@ -27,7 +30,15 @@ public class Alarm {
      * that should be run.
      */
     public void timerInterrupt() {
-	KThread.currentThread().yield();
+	//KThread.currentThread().yield();
+	boolean threadStatus = Machine.interrupt().setStatus(false);
+    	long currentTime = Machine.timer().getTime();
+    	
+    	while(!nextThread.isEmpty() && nextThread.firstKey() <= currentTime){
+    		nextThread.pollFirstEntry().getValue().ready();
+    	}
+    	Machine.interrupt().setStatus(true);
+    	KThread.yield();
     }
 
     /**
@@ -47,7 +58,15 @@ public class Alarm {
     public void waitUntil(long x) {
 	// for now, cheat just to get something working (busy waiting is bad)
 	long wakeTime = Machine.timer().getTime() + x;
-	while (wakeTime > Machine.timer().getTime())
-	    KThread.yield();
+	boolean threadStatus = Machine.interrupt().setStatus(false);
+	
+	nextThread.put(wakeTime, KThread.currentThread());
+	
+	//while (wakeTime > Machine.timer().getTime())
+	KThread.yield();
+    
+	Machine.interrupt().setStatus(true);
+	/*while (wakeTime > Machine.timer().getTime())
+	    KThread.yield();*/
     }
 }
