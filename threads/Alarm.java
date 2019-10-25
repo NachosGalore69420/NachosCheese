@@ -32,7 +32,8 @@ public class Alarm {
      */
     public void timerInterrupt() {
 	//KThread.currentThread().yield();
-	boolean threadStatus = Machine.interrupt().setStatus(false);
+	
+	Machine.interrupt().setStatus(false);
     	long currentTime = Machine.timer().getTime();
     	
     	while(!nextThread.isEmpty() && nextThread.firstKey() <= currentTime){
@@ -59,7 +60,7 @@ public class Alarm {
     public void waitUntil(long x) {
 	// for now, cheat just to get something working (busy waiting is bad)
 	long wakeTime = Machine.timer().getTime() + x;
-	boolean threadStatus = Machine.interrupt().setStatus(false);
+	Machine.interrupt().setStatus(false);
 	
 	nextThread.put(wakeTime, KThread.currentThread());
 	
