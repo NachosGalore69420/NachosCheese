@@ -13,7 +13,18 @@ public class Communicator {
     /**
      * Allocate a new communicator.
      */
+	 
+	private Lock mutex;			//Lock
+	private Integer Buffer;			//Buffer
+	private Condition2 currListener; 	//condition for listener
+	private Condition2 currSpeaker;		//condition for speaker 
+	
     public Communicator() {
+    	
+    	this.mutex = new Lock();
+    	this.Buffer = 0;
+    	this.currListener = new Condition2(this.mutex);
+    	this.currSpeaker = new Condition2(this.mutex);
     }
 
     /**
@@ -27,6 +38,14 @@ public class Communicator {
      * @param	word	the integer to transfer.
      */
     public void speak(int word) {
+    	
+    	this.mutex.acquire();							//acquiring the lock
+    	while(this.Buffer != 0) {						//when the buffer is not empty , put other speakers to sleep			
+    		this.currSpeaker.sleep();
+    	}
+    	this.Buffer = word;							//the buffer equals the new value
+    	this.currListener.wake();						// wake listener
+    	this.mutex.release();							// lock is released
     }
 
     /**
@@ -36,6 +55,19 @@ public class Communicator {
      * @return	the integer transferred.
      */    
     public int listen() {
-	return 0;
+    	
+    	int messages; 				//message from the speaker function
+    	this.mutex.acquire();			//acquiring the lock
+    	
+    	while (this.Buffer == 0) { //when the buffer is empty, there is no message to listen to so listener sleeps
+    		this.currListener.sleep();
+    	}
+    	
+    	messages = this.Buffer.intValue();		//the message from speaker is now buffers value
+    	this.Buffer = 0;				//reset the buffer to empty
+    	this.currSpeaker.wake();			//the speaker wakes
+    	this.mutex.release();				// lock is released
+	
+    	return messages;
     }
 }
