@@ -46,7 +46,7 @@ public class Communicator {
     		this.currSpeaker.sleep();
     	}
     	this.Buffer = word;								//the buffer equals the new value
-    	this.currListener.wake();						// wake listener
+    	this.currListener.wakeAll();						// wake listener
     	this.transfer.sleep();
     	this.mutex.release();							// lock is released
     }
@@ -67,7 +67,7 @@ public class Communicator {
     	}
     	
     	messages = this.Buffer.intValue();				//the message from speaker is now buffers value
-    	this.Buffer = 0;								//reset the buffer to empty
+    	this.Buffer = null;								//reset the buffer to empty
     	this.currSpeaker.wake();						//the speaker wakes
     	this.transfer.wake();
     	this.mutex.release();							// lock is released
