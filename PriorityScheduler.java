@@ -168,12 +168,20 @@ public class PriorityScheduler extends Scheduler {
 	 *		return.
 	 */
 	protected ThreadState pickNextThread() {
-	    // implement me
-		int maxPriority = minPriority;
+		int maxPriority = minPriority;//holds Prioirty level
 		int tempPriority;
-
 		
-	    return null;
+		Kthread result = null;//holds selected thread
+		
+		for(KThred thread : waitQueue)
+			if(result == null || getffectivePrioirty(thread) > maxPriority){
+				result = thread;
+				maxPrioirity = getffectivePrioirty(thread);
+			}
+		if(result == null)
+			return null;
+		return getThreadState(result); 
+	    
 	}
 	
 	public void print() {
