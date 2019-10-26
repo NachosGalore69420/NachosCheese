@@ -123,7 +123,7 @@ public class PriorityScheduler extends Scheduler {
 
 	return (ThreadState) thread.schedulingState;
     }
-
+//------------------Priority Queue---------------
     /**
      * A <tt>ThreadQueue</tt> that sorts threads by priority.
      */
@@ -144,24 +144,20 @@ public class PriorityScheduler extends Scheduler {
 
 	public KThread nextThread() {
 	    Lib.assertTrue(Machine.interrupt().disabled());
-	    if(waitQueue.priorityQueue.isEmpty())
+	    //if queue is empty, end
+	    if(waitQueue.priorityQueue.isEmpty() || pickNextThread() == null)
 	    	return null;
-	    /*
-	    flow: 
-	    check if inturupts off
-	    get threadState from picknextthread
-	    remove theadstate from queue
-	    check if not null
-	    	remove 
 	    
-	    /*
-	    // current thread
-	    KThread thread = KThread.currentThread();
-	    TheadState thisState = getThreadState(thread);*/
+	    //pick nextThread from queue
+	    KThread nextThread = pickNextThread().thread;
+	    //pop nextThread from queue
+	    this.waitQueue.remove(nextThread);
 	    
-	    //get next thread
-	    KThread tempThread.getPriority(thread);
-	    return tempThread;
+	    //Store nextThread in tempHolder to be called any time
+	    tempHolder = nextThread;
+	    //acquire nextThread's resources
+	   this.acquire(tempHolder);
+	    return tempHolder;
 	}
 
 	/**
@@ -173,8 +169,11 @@ public class PriorityScheduler extends Scheduler {
 	 */
 	protected ThreadState pickNextThread() {
 	    // implement me
+		int maxPriority = minPriority;
+		int tempPriority;
 
-	    return theads.TheadQueue.nextThread();
+		
+	    return null;
 	}
 	
 	public void print() {
@@ -187,8 +186,10 @@ public class PriorityScheduler extends Scheduler {
 	 * threads to the owning thread.
 	 */
 	public boolean transferPriority;
+	/** Holds value */
+	private ThreadState tempHolder = null;
     }
-
+//------------------Prioirty Queue----------------
     /**
      * The scheduling state of a thread. This should include the thread's
      * priority, its effective priority, any objects it owns, and the queue
@@ -237,7 +238,7 @@ public class PriorityScheduler extends Scheduler {
 	public void setPriority(int priority) {
 	    if (this.priority == priority)
 		return;
-	    
+	    //atomize this
 	    this.priority = priority;
 	    
 	    // implement me
