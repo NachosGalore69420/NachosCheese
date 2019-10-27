@@ -145,13 +145,13 @@ public class PriorityScheduler extends Scheduler {
 	public KThread nextThread() {
 	    Lib.assertTrue(Machine.interrupt().disabled());
 	    //if queue is empty, end
-	    if(priorityWaitQueue.priorityQueue.isEmpty() || pickNextThread() == null)
+	    if(priorityWaitQueue.isEmpty() || pickNextThread() == null)
 	    	return null;
 	    
 	    //pick nextThread from queue
 	    KThread nextThread = pickNextThread().thread;
 	    //pop nextThread from queue
-	    this.waitQueue.remove(nextThread);
+	    this.priorityWaitQueue.remove(nextThread);
 	    
 	    //Store nextThread in tempHolder to be called any time
 	    tempHolder = nextThread;
@@ -168,14 +168,14 @@ public class PriorityScheduler extends Scheduler {
 	 *		return.
 	 */
 	protected ThreadState pickNextThread() {
-		int maxPriority = minPriority;//holds Prioirty level
+		int topPriority = priorityMinimum;//holds Prioirty level
 		
-		Kthread result = null;//holds selected thread
+		KThread result = null;//holds selected thread
 		
-		for(KThred thread : priorityWaitQueue)
-			if(result == null || getffectivePrioirty(thread) > maxPriority){
+		for(KThread thread : priorityWaitQueue)
+			if(result == null || getEffectivePriority(thread) > topPriority){
 				result = thread;
-				maxPrioirity = getffectivePrioirty(thread);
+				topPriority = getEffectivePriority(thread);
 			}
 		if(result == null)
 			return null;
@@ -200,7 +200,7 @@ public class PriorityScheduler extends Scheduler {
 	 */
 	public boolean transferPriority;
 	/** Holds value */
-	private ThreadState tempHolder = null;
+	private KThread tempHolder = null;
 	/**Queue of waiting Threads*/
 	protected LinkedList<KThread> priorityWaitQueue = new LinkedList<KThread>();
     /**Flag to check if Prioirty of thread is updated*/
@@ -249,7 +249,7 @@ public class PriorityScheduler extends Scheduler {
 	for(int i = 0; i < waitQueue.size(); i++){
 		tempPriority = waitQueue.get(i).getEffectivePriority();
 			if(tempPriority > effectivePriority){
-				effectivePrioriy = tempPriority;
+				effectivePriority = tempPriority;
 			}
 		
 	}
@@ -308,7 +308,7 @@ public class PriorityScheduler extends Scheduler {
 	public void acquire(PriorityQueue waitQueue) {
 	    //if disable interrupts + waitQueue is empty
 		Lib.assertTrue(Machine.interrupt().disabled());
-		Lib.assertTrue(waitQueue.priorityQueue.isEmpty());
+		Lib.assertTrue(waitQueue.priorityWaitQueue.isEmpty());
 		//add self to waitQueue
 		this.waitQueue.add(waitQueue);
 	}	
@@ -318,6 +318,6 @@ public class PriorityScheduler extends Scheduler {
 	/** The priority of the associated thread. */
 	protected int priority;
 	/**A linked list of PriorityQueues to get resources from*/
-	protected LinkedList<PriroityQueue> waitQueue = new LinkedList<PriorityQueue>();
+	protected LinkedList<PriorityQueue> waitQueue = new LinkedList<PriorityQueue>();
     }
 }
