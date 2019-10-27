@@ -189,6 +189,21 @@ public class PriorityScheduler extends Scheduler {
 		priorityChange = true;
 	}
 	
+	public int getPriority(){
+		if(transferPriority == false)
+			return priorityMinimum;
+		
+		int tempPriority, effectivePriority = priorityMinimum;
+		
+		for(int i = 0; i < priorityWaitQueue.size(); i++){
+			tempPriority = getThreadState(priorityWaitQueue.get(i)).getEffectivePriority();
+			if(tempPriority > effectivePriority) {
+				effectivePriority = tempPriority;
+			}
+		}
+	return effectivePriority;
+	}
+	
 	public void print() {
 	    Lib.assertTrue(Machine.interrupt().disabled());
 	    // implement me (if you want)
@@ -244,14 +259,15 @@ public class PriorityScheduler extends Scheduler {
 	public int getEffectivePriority() {
 	    // implement me
 	int effectivePriority = priority;
-	int tempPriority;
+	int tempPriority = -1;
 	
-	for(int i = 0; i < waitQueue.size(); i++){
-		tempPriority = waitQueue.get(i).getEffectivePriority();
+	for(int i = 0; i < donateQueue.size(); i++){
+		PriorityQueue pq = donateQueue.get(i);
+		tempPriority =  pq.getPriority();
 			if(tempPriority > effectivePriority){
 				effectivePriority = tempPriority;
 			}
-		
+	
 	}
 	
 	if(effectivePriority == priorityMinimum)
@@ -310,14 +326,14 @@ public class PriorityScheduler extends Scheduler {
 		Lib.assertTrue(Machine.interrupt().disabled());
 		Lib.assertTrue(waitQueue.priorityWaitQueue.isEmpty());
 		//add self to waitQueue
-		this.waitQueue.add(waitQueue);
+		this.donateQueue.add(waitQueue);
 	}	
 
 	/** The thread with which this object is associated. */	   
 	protected KThread thread;
 	/** The priority of the associated thread. */
 	protected int priority;
-	/**A linked list of PriorityQueues to get resources from*/
-	protected LinkedList<PriorityQueue> waitQueue = new LinkedList<PriorityQueue>();
+	/**A linked list of PriorityQueues that donate resources to*/
+	protected LinkedList<PriorityQueue> donateQueue = new LinkedList<PriorityQueue>();
     }
 }
