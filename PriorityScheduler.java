@@ -145,7 +145,7 @@ public class PriorityScheduler extends Scheduler {
 	public KThread nextThread() {
 	    Lib.assertTrue(Machine.interrupt().disabled());
 	    //if queue is empty, end
-	    if(waitQueue.priorityQueue.isEmpty() || pickNextThread() == null)
+	    if(priorityWaitQueue.priorityQueue.isEmpty() || pickNextThread() == null)
 	    	return null;
 	    
 	    //pick nextThread from queue
@@ -169,11 +169,10 @@ public class PriorityScheduler extends Scheduler {
 	 */
 	protected ThreadState pickNextThread() {
 		int maxPriority = minPriority;//holds Prioirty level
-		int tempPriority;
 		
 		Kthread result = null;//holds selected thread
 		
-		for(KThred thread : waitQueue)
+		for(KThred thread : priorityWaitQueue)
 			if(result == null || getffectivePrioirty(thread) > maxPriority){
 				result = thread;
 				maxPrioirity = getffectivePrioirty(thread);
@@ -182,6 +181,12 @@ public class PriorityScheduler extends Scheduler {
 			return null;
 		return getThreadState(result); 
 	    
+	}
+	
+	public void changedPriority(){
+		if(transferPriority == false)
+			return;
+		priorityChange = true;
 	}
 	
 	public void print() {
@@ -196,6 +201,10 @@ public class PriorityScheduler extends Scheduler {
 	public boolean transferPriority;
 	/** Holds value */
 	private ThreadState tempHolder = null;
+	/**Queue of waiting Threads*/
+	protected LinkedList<KThread> priorityWaitQueue = new LinkedList<KThread>();
+    /**Flag to check if Prioirty of thread is updated*/
+	private boolean priorityChange = false;
     }
 //------------------Prioirty Queue----------------
     /**
@@ -234,8 +243,22 @@ public class PriorityScheduler extends Scheduler {
 	 */
 	public int getEffectivePriority() {
 	    // implement me
+	int effectivePriority = priority;
+	int tempPriority;
+	
+	for(int i = 0; i < waitQueue.size(); i++){
+		tempPriority = waitQueue.get(i).getEffectivePriority();
+			if(tempPriority > effectivePriority){
+				effectivePrioriy = tempPriority;
+			}
 		
-	    return priority;
+	}
+	
+	if(effectivePriority == priorityMinimum)
+		effectivePriority = getPriority();
+		
+		//returns prioirity
+	    return effectivePriority;
 	}
 
 	/**
@@ -244,9 +267,7 @@ public class PriorityScheduler extends Scheduler {
 	 * @param	priority	the new priority.
 	 */
 	public void setPriority(int priority) {
-	    if (this.priority == priority)
-		return;
-	    //atomize this
+		//sets priority
 	    this.priority = priority;
 	    
 	    // implement me
@@ -265,6 +286,12 @@ public class PriorityScheduler extends Scheduler {
 	 * @see	nachos.threads.ThreadQueue#waitForAccess
 	 */
 	public void waitForAccess(PriorityQueue waitQueue) {
+		 Lib.assertTrue(Machine.interrupt().disabled());
+
+		 waitQueue.changedPriority();
+		 
+			
+		 waitQueue.priorityWaitQueue.add(thread);
 	    // implement me
 	}
 
@@ -292,7 +319,5 @@ public class PriorityScheduler extends Scheduler {
 	protected int priority;
 	/**A linked list of PriorityQueues to get resources from*/
 	protected LinkedList<PriroityQueue> waitQueue = new LinkedList<PriorityQueue>();
-    protected PriorityQueue waiting;
-    
     }
 }
