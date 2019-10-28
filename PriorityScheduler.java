@@ -74,8 +74,9 @@ public class PriorityScheduler extends Scheduler {
 	KThread thread = KThread.currentThread();
 
 	int priority = getPriority(thread);
-	if (priority == priorityMaximum)
-	    return false;
+	if (priority == priorityMaximum){
+		Machine.interrupt().restore(intStatus);
+	    return false;}
 
 	setPriority(thread, priority+1);
 
@@ -323,8 +324,8 @@ public class PriorityScheduler extends Scheduler {
 	 */
 	public void acquire(PriorityQueue waitQueue) {
 	    //if disable interrupts + waitQueue is empty
-		Lib.assertTrue(Machine.interrupt().disabled());
-		Lib.assertTrue(waitQueue.priorityWaitQueue.isEmpty());
+		//Lib.assertTrue(Machine.interrupt().disabled());
+		//Lib.assertTrue(waitQueue.priorityWaitQueue.isEmpty());
 		//add self to waitQueue
 		this.donateQueue.add(waitQueue);
 	}	
