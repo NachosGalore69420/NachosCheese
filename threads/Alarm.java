@@ -39,6 +39,7 @@ public class Alarm {
     	while(!nextThread.isEmpty() && nextThread.firstKey() <= currentTime){
     		nextThread.pollFirstEntry().getValue().ready();
     	}
+	    
     	Machine.interrupt().setStatus(true);
     	KThread.yield();
     }
