@@ -1,5 +1,9 @@
 package nachos.threads;
 import nachos.ag.BoatGrader;
+import nachos.machine.Machine;
+
+// Needed for assertions?
+// import nachos.machine.*;
 
 public class Boat
 {
@@ -8,11 +12,15 @@ public class Boat
     static Condition2 adultQueue;
     static Condition2 childQueue;
     static Condition2 childQueueM;
+    static Condition2 toMolokai;
+    static Condition2 waitUntilDone;
     static int aOahu, cOahu;
     static Lock lock;
     // Note: may need to initialize a bool for boat location and if there is a child on the boat
     static boolean bLocation;
+    // A boolean to communicate if there is a child waiting for a passenger to ride with.
     static boolean cOnBoat;
+    static boolean finished;
     
     public static void selfTest()
     {
@@ -43,13 +51,17 @@ public class Boat
 	lock = new Lock();
 	adultQueue = new Condition2(lock);
 	childQueue = new Condition2(lock);
-	// We will initialize one more conditional variables for children on Molokai specifically. This is to avoid busy-waiting.
+	// We will initialize another conditional variable for children on Molokai specifically. This is to avoid busy-waiting.
 	childQueueM = new Condition2(lock);
+	// Another conditional variable will be used when a child is waiting on another passenger before going to Molokai.
+	toMolokai = new Condition2(lock);
+	waitUntilDone = new Condition2(lock);
+	finished = false;
 	
 	// Create threads here. See section 3.4 of the Nachos for Java
 	// Walkthrough linked from the projects page.
 	
-	// Sample runnable and thread creation:
+	/* Sample runnable and thread creation:
 	Runnable r = new Runnable() {
 	    public void run() {
                 SampleItinerary();
@@ -58,6 +70,7 @@ public class Boat
     KThread t = new KThread(r);
     t.setName("Sample Boat Thread");
     t.fork();
+    */
     
     // Create two runnables to initialize location and run AdultItinerary/ChildItinerary
     Runnable rA = new Runnable() {
@@ -75,29 +88,39 @@ public class Boat
     	}
     };
     
+    aOahu = adults;
+    cOahu = children;
+    
+    //Potentially have to disable interrupts while system is setup?
+    Machine.interrupt().disable();
+    
     // Two for loops to initialize our adult and child threads, then to fork() them to run.
-	for (int i = 0; i < adults; i++) {
+	for (int i = 0; i < children; i++) {
+		KThread childT = new KThread(rC);
+		childT.setName("Child thread " + (i+1));
+		// Another counter to help the threads 'remember' the number of initial people.
+		// cOahu++;
+		childT.fork();
+	}
+    for (int i = 0; i < adults; i++) {
 		// Creates a new adult thread by passing our corresponding runnable.
 		KThread adultT = new KThread(rA);
 		// Names for threads are set for debugging purposes.
 		adultT.setName("Adult thread " + (i+1));
 		// Counter increments to remember how many adults are initially on Oahu.
-		aOahu++;
+		// aOahu++;
 		// Fork beings the runnable
 		adultT.fork();
 	}
-	// Same for loop to create threads for each child now.
-	for (int i = 0; i < children; i++) {
-		KThread childT = new KThread(rC);
-		childT.setName("Child thread " + (i+1));
-		// Another counter to help the threads 'remember' the number of initial people.
-		cOahu++;
-		childT.fork();
-	}
-	// After all threads are created and running, wake only one of each to begin the simulation.
-	// Note: try wakeAll() if code does not work
-	adultQueue.wake();
-	childQueue.wake();
+    Machine.interrupt().enable();
+	// Perhaps use a while loop that waits until simulation is done?
+    lock.acquire();
+    while(!finished) {
+    	childQueue.wakeAll();
+    	waitUntilDone.sleep();
+    }
+    lock.release();
+    return;
     }
 
     /* The goal of AdultItinerary is to obtain the boat when possible. (>0 children at Molokai, for instance)
@@ -114,23 +137,26 @@ public class Boat
 	       bg.AdultRowToMolokai();
 	   indicates that an adult has rowed the boat across to Molokai
 	*/
-    	/* Thread should first sleep until woken again by begin()
-    	 * This is to ensure that all adult and children are initialized before the boat moves.
-    	 */
-    	adultQueue.sleep();
-    	// Sleep until there are less than 2 children left on Oahu, which is the only case that an adult should leave for Molokai
-    	while (cOahu > 1) 
-    		adultQueue.sleep();
-    	// When woken and able to row, first acquire the lock before rowing.
+    	// adultQueue.sleep();
+    	// Goal: Sleep until there are less than 2 children left on Oahu, which is the only case that an adult should leave for Molokai
     	lock.acquire();
-    	// Send message to boat grader, reduce number of adults on Oahu, and set boat's location to Molokai (T)
-    	bg.AdultRowToMolokai();
-    	aOahu--;
-    	bLocation = true;
-    	// Release lock, wake child on Molokai, and return (finished)
+    	// System.out.println("Adult Itinerary test");
+    	while (cOahu > 1) {
+    		childQueue.wakeAll();
+    		adultQueue.sleep();
+    	}
+    	if (bLocation == false && cOahu == 1) {
+    		// When woken and able to row, first acquire the lock before rowing.
+    		lock.acquire();
+    		// Send message to boat grader, reduce number of adults on Oahu, and set boat's location to Molokai (T)
+    		bg.AdultRowToMolokai();
+    		aOahu--;
+    		bLocation = true;
+    		// Release lock, wake child on Molokai, and do nothing more (finished)
+    		lock.release();
+    		childQueueM.wakeAll();
+    	}
     	lock.release();
-    	childQueueM.wake();
-    	return;
     }
 
     /* My strategy for the ChildItinerary function is to have many different cases of people remaining on Oahu.
@@ -140,10 +166,12 @@ public class Boat
      */
     static void ChildItinerary(boolean location)
     {
-    	// Just like AdultItinerary, sleep until the entire system is set-up.
-    	childQueue.sleep();
+    	// Sleep until the entire system is set-up.
+    	lock.acquire();
+    	// System.out.println("Child Itinerary test");
+    	// childQueue.sleep();
     	// while(location == false) {
-    	// while(true) should be used so that the same 
+    	// while(true) should be used so that the same child thread operates the boat when needed.
     	while (true) {
     		if (location == false && bLocation == false) {
     			// If there is a child piloting the boat (at Oahu) that woke up this thread, ride to Molokai.
@@ -151,39 +179,48 @@ public class Boat
     				bg.ChildRideToMolokai();
     				cOahu--;
     				location = true;
-    				cOnBoat = false;
-    				// Sleep until woken up later by an adult later.
+    				bLocation = true;
+    				toMolokai.wakeAll();
+    				// Sleep at Molokai until woken up later by an adult later.
     				childQueueM.sleep();
     			}
     			// If 2 children at Oahu, take both to Molokai and set both locations to true (Molokai)
-    			else if (cOahu > 1) {
-    				lock.acquire();
+    			else if (cOahu > 1 && cOnBoat == false) {
+    				// lock.acquire();
     				cOnBoat = true;
-    				childQueue.wake();
     				bg.ChildRowToMolokai();
     				cOahu--;
+    				childQueue.wakeAll();
+    				toMolokai.sleep();
+    				cOnBoat = false;
     				location = true;
     				bLocation = true;
-    				lock.release();
+    				// lock.release();
     			}
     			else if (cOahu < 2 && aOahu > 0) {
-    				adultQueue.wake();
+    				// lock.acquire();
+    				adultQueue.wakeAll();
     				childQueue.sleep();
+    				// lock.release();
     			}
     		}
     		if (location == true && bLocation == true) {
-    			if (cOahu == 0 && aOahu == 0)
-    				return;
+    			if (cOahu == 0 && aOahu == 0) {
+    				finished = true;
+    				waitUntilDone.wakeAll();
+    				break;
+    			}
     			else {
-    				lock.acquire();
+    				// lock.acquire();
     				bg.ChildRowToOahu();
     				cOahu++;
     				location = false;
     				bLocation = false;
-    				lock.release();
+    				// lock.release();
     			}
     		}
     	}
+    	lock.release();
     	
     }
 
