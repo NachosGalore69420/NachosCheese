@@ -120,6 +120,7 @@ public class Boat
     	waitUntilDone.sleep();
     }
     lock.release();
+    System.out.println("DEBUG: Finishing begin()");
     return;
     }
 
@@ -140,22 +141,25 @@ public class Boat
     	// adultQueue.sleep();
     	// Goal: Sleep until there are less than 2 children left on Oahu, which is the only case that an adult should leave for Molokai
     	lock.acquire();
-    	// System.out.println("Adult Itinerary test");
-    	while (cOahu > 1) {
+    	// System.out.println("DEBUG: Adult thread start.");
+    	while (cOahu > 1 || bLocation == true) {
     		childQueue.wakeAll();
     		adultQueue.sleep();
     	}
     	if (bLocation == false && cOahu == 1) {
     		// When woken and able to row, first acquire the lock before rowing.
-    		lock.acquire();
+    		// lock.acquire();
     		// Send message to boat grader, reduce number of adults on Oahu, and set boat's location to Molokai (T)
     		bg.AdultRowToMolokai();
     		aOahu--;
     		bLocation = true;
     		// Release lock, wake child on Molokai, and do nothing more (finished)
-    		lock.release();
+    		// lock.release();
     		childQueueM.wakeAll();
     	}
+    	
+    	// System.out.println("DEBUG: Adult thread end.");
+    	adultQueue.sleep();
     	lock.release();
     }
 
@@ -166,9 +170,9 @@ public class Boat
      */
     static void ChildItinerary(boolean location)
     {
-    	// Sleep until the entire system is set-up.
+    	
     	lock.acquire();
-    	// System.out.println("Child Itinerary test");
+    	// System.out.println("DEBUG: Child thread start.");
     	// childQueue.sleep();
     	// while(location == false) {
     	// while(true) should be used so that the same child thread operates the boat when needed.
@@ -203,6 +207,12 @@ public class Boat
     				childQueue.sleep();
     				// lock.release();
     			}
+    			else if (cOahu == 1) {
+    				bg.ChildRowToMolokai();
+    				cOahu--;
+    				location = true;
+    				bLocation = true;
+    			}
     		}
     		if (location == true && bLocation == true) {
     			if (cOahu == 0 && aOahu == 0) {
@@ -219,7 +229,14 @@ public class Boat
     				// lock.release();
     			}
     		}
+    		/*
+    		else {
+    			childQueueM.wakeAll();
+    			childQueue.sleep();
+    		}
+    		*/
     	}
+    	// System.out.println("DEBUG: System finished");
     	lock.release();
     	
     }
