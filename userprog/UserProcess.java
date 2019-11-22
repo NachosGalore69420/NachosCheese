@@ -127,6 +127,7 @@ public class UserProcess {
      *			the array.
      * @return	the number of bytes successfully transferred.
      */
+    // Needs to be modified for Task II (see project prompt)
     public int readVirtualMemory(int vaddr, byte[] data, int offset,
 				 int length) {
 	Lib.assertTrue(offset >= 0 && length >= 0 && offset+length <= data.length);
@@ -170,6 +171,7 @@ public class UserProcess {
      *			virtual memory.
      * @return	the number of bytes successfully transferred.
      */
+    // Also needs to be modified for Task II
     public int writeVirtualMemory(int vaddr, byte[] data, int offset,
 				  int length) {
 	Lib.assertTrue(offset >= 0 && length >= 0 && offset+length <= data.length);
@@ -339,6 +341,8 @@ public class UserProcess {
      * Handle the halt() system call. 
      */
     private int handleHalt() {
+    	// We must check if the process calling halt is the "root," or the first process created.
+    	// ADD CODE HERE
 
 	Machine.halt();
 	
@@ -391,7 +395,36 @@ public class UserProcess {
 	switch (syscall) {
 	case syscallHalt:
 	    return handleHalt();
-
+	/* Add our added syscall functions to be handled here depending on case.
+	 * Handlers for creat, open, read, write, close, & unlink: (Task I)
+	 * NOTE: All arguments are passed as integers (a0-a3) through the syscall handler
+	 */
+	case syscallCreate:
+		// creat(char *name)
+		return handleCreate(a0);
+	case syscallOpen:
+		// int open(char *name)
+		return handleOpen(a0);
+	case syscallRead:
+		// int read(int fileDescriptor, void *buffer, int count)
+		return handleRead(a0, a1, a2);
+	case syscallWrite:
+		// int write(int fileDescriptor, void *buffer, int count)
+		return handleWrite(a0, a1, a2);
+	case syscallClose:
+		// int close(int fileDescriptor)
+		return handleClose(a0);
+	case syscallUnlink:
+		// int unlink(char *name)
+		return handleUnlink(a0);
+	
+	// Handlers for exec, join, & exit: (Task IV)
+	case syscallExec:
+		// int exec(char *file, int argc, char *argv[])
+	case syscallJoin:
+		// int join(int processID, int *status)
+	case syscallExit:
+		// void exit(int status)
 
 	default:
 	    Lib.debug(dbgProcess, "Unknown syscall " + syscall);
@@ -429,7 +462,49 @@ public class UserProcess {
 	    Lib.assertNotReached("Unexpected exception");
 	}
     }
+    
+    /* Task I function implementation:
+     * Our functions are private so that it can only be called on by handleSyscall (can't be accessed directly by user)
+     * If any error should occur, always return -1.
+     */
+    private int handleCreate(int p) {
+    	// First use the char pointer argument and readVirtualMemory to obtain the name of the file
+    	// Note: We use 256 for the max length of string, for if it should be any longer than 256 it could cause errors.
+    	String filename = readVirtualMemoryString(p, 256);
+    	// Check if the filename is valid to catch any errors
+    	if (filename == null) 
+    		return -1;
+    	
+    	// Placeholder return
+    	return -1;
+    }
 
+    private int handleOpen(int name) {
+    	return -1;
+    }
+    
+    private int handleRead(int fileDescriptor, int buffer, int count) {
+    	return -1;
+    }
+    
+    private int handleWrite(int fileDescriptor, int buffer, int count) {
+    	return -1;
+    }
+    
+    private int handleClose(int fileDescriptor) {
+    	return -1;
+    }
+    
+    private int handleUnlink(int name) {
+    	return -1;
+    }
+    // End of Task I's functions
+    
+    
+    // Task II function implementation:
+    
+    
+    
     /** The program being run by this process. */
     protected Coff coff;
 
