@@ -302,7 +302,8 @@ public class UserProcess {
 		section.loadPage(i, vpn);
 	    }
 	}
-	
+	// close
+	coff.close();
 	return true;
     }
 
