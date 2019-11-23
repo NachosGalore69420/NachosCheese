@@ -134,14 +134,41 @@ public class UserProcess {
 
 	byte[] memory = Machine.processor().getMemory();
 	
-	// for now, just assume that virtual addresses equal physical addresses
-	if (vaddr < 0 || vaddr >= memory.length)
-	    return 0;
-
-	int amount = Math.min(length, memory.length-vaddr);
-	System.arraycopy(memory, vaddr, data, offset, amount);
-
-	return amount;
+	//*********** added code
+		int amount = 0;
+		while(offset < data.length && length > 0) {
+			int addOffset = (vaddr % 1024); // initialize variable for offset of address
+			int virPage = (vaddr / 1024);	// initialize variable for virtual page
+			
+			if(virPage < 0 || virPage >= pageTable.length ) { //if statement checking if virtual page is less than 0 OR greater/equal to pageTable
+				break;
+			}
+			
+			TranslationEntry pgTblEntry = pageTable[virPage]; // translation Entry 
+			
+			if(!pgTblEntry.valid) {		//checks if pgTblEntry is valid
+				break;
+			}
+			//setting  used pgTblEntry to true 
+			pgTblEntry.used = true; 		//
+			
+			int physPage = pgTblEntry.ppn;			//initializing new variable for the physical page
+			int physAddress = (physPage * 1024 + addOffset); //initializing new variable for physical address 
+			int sendingLength = Math.min(data.length - offset, Math.min(length, 1024 - addOffset)); // new variable sendingLength for the length to send 
+			
+			
+			System.arraycopy(memory, physAddress, data, offset, sendingLength);
+			
+			
+			length -= sendingLength;		// subtract sendingLength w/ length
+			vaddr += sendingLength;			// add sendinglength w/ vaddr
+			amount += sendingLength;		// add sendinglength w/ amount
+			offset += sendingLength;		// add sendinglength w/ offset
+		}
+		
+		return amount; 
+		//**************
+    
     }
 
     /**
@@ -178,14 +205,41 @@ public class UserProcess {
 
 	byte[] memory = Machine.processor().getMemory();
 	
-	// for now, just assume that virtual addresses equal physical addresses
-	if (vaddr < 0 || vaddr >= memory.length)
-	    return 0;
-
-	int amount = Math.min(length, memory.length-vaddr);
-	System.arraycopy(data, offset, memory, vaddr, amount);
-
-	return amount;
+	//*********** added code
+	int amount = 0;
+	while(offset < data.length && length > 0) {
+		int addOffset = (vaddr % 1024); // initialize variable for offset of address
+		int virPage = (vaddr / 1024);	// initialize variable for virtual page
+		
+		if(virPage < 0 || virPage >= pageTable.length ) { //if statement checking if virtual page is less than 0 OR greater/equal to pageTable
+			break;
+		}
+		
+		TranslationEntry pgTblEntry = pageTable[virPage]; // translation Entry 
+		
+		if(!pgTblEntry.valid) {		//checks if pgTblEntry is valid
+			break;
+		}
+		//setting dirty and used pgTblEntry to true 
+		pgTblEntry.dirty = true;		//
+		pgTblEntry.used = true; 		//
+		
+		int physPage = pgTblEntry.ppn;			//initializing new variable for the physical page
+		int physAddress = (physPage * 1024 + addOffset); //initializing new variable for physical address 
+		int sendingLength = Math.min(data.length - offset, Math.min(length, 1024 - addOffset)); // new variable sendingLength for the length to send 
+		
+		
+		System.arraycopy(data, offset, memory, physAddress, sendingLength);
+		
+		
+		length -= sendingLength;		// subtract sendingLength w/ length
+		vaddr += sendingLength;			// add sendinglength w/ vaddr
+		amount += sendingLength;		// add sendinglength w/ amount
+		offset += sendingLength;		// add sendinglength w/ offset
+	}
+	
+	return amount; 
+	//**************
     }
 
     /**
