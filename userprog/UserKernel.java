@@ -11,6 +11,60 @@ public class UserKernel extends ThreadedKernel {
     /**
      * Allocate a new user kernel.
      */
+	
+	
+	//******* added code
+	public static ArrayList<Boolean>  pageStatus; //new Array List 
+	public static LinkedList<Integer> freePage;   //new linked list 
+	
+	
+	
+	public static void initializePages() { 		//new method intializePages
+		
+		pageStatus = new ArrayList<Boolean>(); //initialize the ArrayList
+		freePage = new LinkedList<Integer>();  //initialize the linkedList
+		
+		//for loop for pages
+		//adds the free page and then changes the status 
+		for(int x = 0; x < Machine.processor().getNumPhysPages(); x++) { 
+			freePage.add(x);						
+			pageStatus.add(false);					
+		}
+	}
+	
+	
+	 public static int allocatePage() {
+		 Machine.interrupt().disable();				//disable interrupt 
+		 
+		// if statement that checks the size of the page is less than one 
+		// enable interrupt and returns -1 
+		 if(freePage.size() < 1) {					
+			Machine.interrupt().enable(); 			 
+			 return -1;								// return statement 
+		 }
+		 //else statement 
+		 else {
+			 int pg = freePage.pop();			//new integer variable pg 
+			 Lib.assertTrue(pageStatus.get(pg) == false); //equals false
+			 pageStatus.set(pg, true);			//set the status of the page 
+			 Machine.interrupt().enable();		//enable 
+			 return pg;							//return pg 
+		 }
+		
+	 }
+	 
+	 
+	 public static void deallocatePage(int pg) {
+			Machine.interrupt().disable();				//disable interrupt 
+			Lib.assertTrue(pageStatus.get(pg) == true);
+			pageStatus.set(pg, false);    				// set the page status 
+			freePage.push(pg);							// push the page ("pg") to free page
+			Machine.interrupt().enable();				//enable
+		}
+		
+	//*********
+	 
+	 
     public UserKernel() {
 	super();
     }
