@@ -288,6 +288,27 @@ public class UserProcess {
 	    return false;
 	}
 
+	//Collect Pages for process
+	pageTable = new TranslationEntry[numPages];
+	
+	for(int i = 0; i < numPages; i++){
+		//Obtain a Free Page from Free Pages Stack
+		int physPage = UserKernel.allocatePage();
+	
+		if(physPage < 0){//Then claim current page ;Else there is no space
+			for(int j = 0; j < i; j++){
+				if(pageTable[j].valid){
+					UserKernel.deallocatePage(pageTable[j].ppn);
+					pageTable[j].valid = false;
+				}
+			}
+		
+		}
+		//Add Page to User Process to Use
+		pageTable[i] = new TranslationEntry(i, pagePhysical, true, false, false, false);	
+	}
+	
+	
 	// load sections
 	for (int s=0; s<coff.getNumSections(); s++) {
 	    CoffSection section = coff.getSection(s);
@@ -296,10 +317,14 @@ public class UserProcess {
 		      + " section (" + section.getLength() + " pages)");
 
 	    for (int i=0; i<section.getLength(); i++) {
-		int vpn = section.getFirstVPN()+i;
+			int vpn = section.getFirstVPN()+i;
 
-		// for now, just assume virtual addresses=physical addresses
-		section.loadPage(i, vpn);
+			//Modded to use physical address connected to virtual
+			section.loadPage(i, pageTable[vpn].ppn);
+			
+			if(section.isReadOnly()){
+				pageTable[vpn].readOnly = true;
+				}
 	    }
 	}
 	// close
@@ -311,6 +336,14 @@ public class UserProcess {
      * Release any resources allocated by <tt>loadSections()</tt>.
      */
     protected void unloadSections() {
+    	//For all pages
+    	for (int i=0; i<pageTable.length; i++) {
+    		//table is 
+    		if (pageTable[i].valid) {
+    			UserKernel.deallocatePage(pageTable[i].ppn);
+    			pageTable[i].valid = false;
+    		}
+    	}
     }    
 
     /**
