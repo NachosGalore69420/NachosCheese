@@ -3,7 +3,8 @@ package nachos.userprog;
 import nachos.machine.*;
 import nachos.threads.*;
 import nachos.userprog.*;
-
+import java.util.HashMap;
+import java.util.List;
 import java.io.EOFException;
 
 /**
@@ -22,7 +23,13 @@ public class UserProcess {
     /**
      * Allocate a new process.
      */
+	private static final int root = 1;
+	private static int MathRand = root;
+	
+	
     public UserProcess() {
+    pID = ++pIDs;
+    
 	int numPhysPages = Machine.processor().getNumPhysPages();
 	pageTable = new TranslationEntry[numPhysPages];
 	for (int i=0; i<numPhysPages; i++)
@@ -425,16 +432,33 @@ public class UserProcess {
      * @return	the value to be returned to the user.
      */
     public int handleSyscall(int syscall, int a0, int a1, int a2, int a3) {
-	switch (syscall) {
-	case syscallHalt:
-	    return handleHalt();
+    	switch (syscall) {
+    	case syscallHalt:
+    	    return handleHalt();
+    	case syscallExit:
+    		return syscallExit();
+    	case syscallExec:
+    		return syscallExit();
+    	case syscallJoin:
+    		return syscallJoin(); 
+    	case syscallCreate:
+    		return syscallCreate();
+    	case syscallOpen:
+    		return syscallOpen();
+    	case syscallRead:
+    		return syscallRead()
+    	case syscallWrite:
+    		return syscallWrite();
+    	case syscallClose:
+    		return syscallClose();
+    	case syscallUnlink:
+    		return syscallUnlink();
 
-
-	default:
-	    Lib.debug(dbgProcess, "Unknown syscall " + syscall);
-	    Lib.assertNotReached("Unknown system call!");
-	}
-	return 0;
+    	default:
+    	    Lib.debug(dbgProcess, "Unknown syscall " + syscall);
+    	    Lib.assertNotReached("Unknown system call!");
+    	}
+    	return 0;
     }
 
     /**
@@ -446,25 +470,25 @@ public class UserProcess {
      * @param	cause	the user exception that occurred.
      */
     public void handleException(int cause) {
-	Processor processor = Machine.processor();
+    	Processor processor = Machine.processor();
 
-	switch (cause) {
-	case Processor.exceptionSyscall:
-	    int result = handleSyscall(processor.readRegister(Processor.regV0),
-				       processor.readRegister(Processor.regA0),
-				       processor.readRegister(Processor.regA1),
-				       processor.readRegister(Processor.regA2),
-				       processor.readRegister(Processor.regA3)
-				       );
-	    processor.writeRegister(Processor.regV0, result);
-	    processor.advancePC();
-	    break;				       
-				       
-	default:
-	    Lib.debug(dbgProcess, "Unexpected exception: " +
-		      Processor.exceptionNames[cause]);
-	    Lib.assertNotReached("Unexpected exception");
-	}
+    	switch (cause) {
+    	case Processor.exceptionSyscall:
+    	    int result = handleSyscall(processor.readRegister(Processor.regV0),
+    				       processor.readRegister(Processor.regA0),
+    				       processor.readRegister(Processor.regA1),
+    				       processor.readRegister(Processor.regA2),
+    				       processor.readRegister(Processor.regA3)
+    				       );
+    	    processor.writeRegister(Processor.regV0, result);
+    	    processor.advancePC();
+    	    break;				       
+    				       
+    	default:
+    	    Lib.debug(dbgProcess, "Unexpected exception: " +
+    		      Processor.exceptionNames[cause]);
+    	    Lib.assertNotReached("Unexpected exception");
+    	}
     }
 
     /** The program being run by this process. */
@@ -480,7 +504,12 @@ public class UserProcess {
     
     private int initialPC, initialSP;
     private int argc, argv;
-	
+    
     private static final int pageSize = Processor.pageSize;
     private static final char dbgProcess = 'a';
+    private int pID;
+	private static int pIDs = 0;
+	private HashMap<Integer, OpenFile> allFile;
+	private List<Integer> desc;
+	public OpenFile[] tbl;
 }
