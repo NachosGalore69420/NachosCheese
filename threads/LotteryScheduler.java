@@ -5,6 +5,7 @@ import nachos.machine.*;
 import java.util.TreeSet;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Random;
 
 /**
  * A scheduler that chooses threads using a lottery.
@@ -42,7 +43,49 @@ public class LotteryScheduler extends PriorityScheduler {
      * @return	a new lottery thread queue.
      */
     public ThreadQueue newThreadQueue(boolean transferPriority) {
-	// implement me
-	return null;
+    //Modded to use LotteryQueue
+	return new LotteryQueue(transferPriority);
     }
+    
+    /*
+    public boolean increasePriority(){
+    	
+    }
+    
+    public boolean decreasePriority(){
+    	
+    }
+    */
+    /**
+     * The default priority for a new thread. Do not change this value.
+     */
+    public static final int priorityDefault = 1;
+    /**
+     * The minimum priority that a thread can have. Do not change this value.
+     */
+    public static final int priorityMinimum = 1;
+    /**
+     * The maximum priority that a thread can have. Do not change this value.
+     */
+    public static final int priorityMaximum = Integer.MAX_VALUE;  
+    
+    Public class LotteryQueue extending PriorityQueue{
+    	
+    
+    	
+    }
+    
+    
+/*
+    public class ThreadState extends PriorityScheduler.ThreadState {
+
+	public int getEffectivePriority(){
+		Int sum = priority;
+		Int sumOther = 0;
+		from(int i = 0 to donateQueue.size())
+			LotteryQueue pq = donateQueue.
+			sumOther += 
+	}
+*/
+    
 }
