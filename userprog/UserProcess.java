@@ -295,14 +295,17 @@ public class UserProcess {
 		//Obtain a Free Page from Free Pages Stack
 		int physPage = UserKernel.allocatePage();
 	
-		if(physPage < 0){//Then claim current page ;Else there is no space
+		if(physPage < 0){//If Kernal Returns -1; there is no free pages 
+		Lib.debug(dbgProcess, "\tinsufficient physical memory");
 			for(int j = 0; j < i; j++){
 				if(pageTable[j].valid){
+					//Undo Grab Page
 					UserKernel.deallocatePage(pageTable[j].ppn);
 					pageTable[j].valid = false;
 				}
 			}
-		
+		coff.close();
+		return false;
 		}
 		//Add Page to User Process to Use
 		pageTable[i] = new TranslationEntry(i, pagePhysical, true, false, false, false);	
