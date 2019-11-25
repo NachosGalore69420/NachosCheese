@@ -134,20 +134,48 @@ public class UserProcess {
      *			the array.
      * @return	the number of bytes successfully transferred.
      */
+    // Needs to be modified for Task II (see project prompt)
     public int readVirtualMemory(int vaddr, byte[] data, int offset,
 				 int length) {
 	Lib.assertTrue(offset >= 0 && length >= 0 && offset+length <= data.length);
 
 	byte[] memory = Machine.processor().getMemory();
 	
-	// for now, just assume that virtual addresses equal physical addresses
-	if (vaddr < 0 || vaddr >= memory.length)
-	    return 0;
-
-	int amount = Math.min(length, memory.length-vaddr);
-	System.arraycopy(memory, vaddr, data, offset, amount);
-
-	return amount;
+	//*********** added code
+		int amount = 0;
+		while(offset < data.length && length > 0) {
+			int addOffset = (vaddr % 1024); // initialize variable for offset of address
+			int virPage = (vaddr / 1024);	// initialize variable for virtual page
+			
+			if(virPage < 0 || virPage >= pageTable.length ) { //if statement checking if virtual page is less than 0 OR greater/equal to pageTable
+				break;
+			}
+			
+			TranslationEntry pgTblEntry = pageTable[virPage]; // translation Entry 
+			
+			if(!pgTblEntry.valid) {		//checks if pgTblEntry is valid
+				break;
+			}
+			//setting  used pgTblEntry to true 
+			pgTblEntry.used = true; 		//
+			
+			int physPage = pgTblEntry.ppn;			//initializing new variable for the physical page
+			int physAddress = (physPage * 1024 + addOffset); //initializing new variable for physical address 
+			int sendingLength = Math.min(data.length - offset, Math.min(length, 1024 - addOffset)); // new variable sendingLength for the length to send 
+			
+			
+			System.arraycopy(memory, physAddress, data, offset, sendingLength);
+			
+			
+			length -= sendingLength;		// subtract sendingLength w/ length
+			vaddr += sendingLength;			// add sendinglength w/ vaddr
+			amount += sendingLength;		// add sendinglength w/ amount
+			offset += sendingLength;		// add sendinglength w/ offset
+		}
+		
+		return amount; 
+		//**************
+    
     }
 
     /**
@@ -177,20 +205,48 @@ public class UserProcess {
      *			virtual memory.
      * @return	the number of bytes successfully transferred.
      */
+    // Also needs to be modified for Task II
     public int writeVirtualMemory(int vaddr, byte[] data, int offset,
 				  int length) {
 	Lib.assertTrue(offset >= 0 && length >= 0 && offset+length <= data.length);
 
 	byte[] memory = Machine.processor().getMemory();
 	
-	// for now, just assume that virtual addresses equal physical addresses
-	if (vaddr < 0 || vaddr >= memory.length)
-	    return 0;
-
-	int amount = Math.min(length, memory.length-vaddr);
-	System.arraycopy(data, offset, memory, vaddr, amount);
-
-	return amount;
+	//*********** added code
+	int amount = 0;
+	while(offset < data.length && length > 0) {
+		int addOffset = (vaddr % 1024); // initialize variable for offset of address
+		int virPage = (vaddr / 1024);	// initialize variable for virtual page
+		
+		if(virPage < 0 || virPage >= pageTable.length ) { //if statement checking if virtual page is less than 0 OR greater/equal to pageTable
+			break;
+		}
+		
+		TranslationEntry pgTblEntry = pageTable[virPage]; // translation Entry 
+		
+		if(!pgTblEntry.valid) {		//checks if pgTblEntry is valid
+			break;
+		}
+		//setting dirty and used pgTblEntry to true 
+		pgTblEntry.dirty = true;		//
+		pgTblEntry.used = true; 		//
+		
+		int physPage = pgTblEntry.ppn;			//initializing new variable for the physical page
+		int physAddress = (physPage * 1024 + addOffset); //initializing new variable for physical address 
+		int sendingLength = Math.min(data.length - offset, Math.min(length, 1024 - addOffset)); // new variable sendingLength for the length to send 
+		
+		
+		System.arraycopy(data, offset, memory, physAddress, sendingLength);
+		
+		
+		length -= sendingLength;		// subtract sendingLength w/ length
+		vaddr += sendingLength;			// add sendinglength w/ vaddr
+		amount += sendingLength;		// add sendinglength w/ amount
+		offset += sendingLength;		// add sendinglength w/ offset
+	}
+	
+	return amount; 
+	//**************
     }
 
     /**
@@ -383,6 +439,8 @@ public class UserProcess {
      * Handle the halt() system call. 
      */
     private int handleHalt() {
+    	// We must check if the process calling halt is the "root," or the first process created.
+    	// ADD CODE HERE
 
 	Machine.halt();
 	
@@ -459,6 +517,7 @@ public class UserProcess {
     	    Lib.assertNotReached("Unknown system call!");
     	}
     	return 0;
+
     }
 
     /**
@@ -490,7 +549,49 @@ public class UserProcess {
     	    Lib.assertNotReached("Unexpected exception");
     	}
     }
+    
+    /* Task I function implementation:
+     * Our functions are private so that it can only be called on by handleSyscall (can't be accessed directly by user)
+     * If any error should occur, always return -1.
+     */
+    private int handleCreate(int p) {
+    	// First use the char pointer argument and readVirtualMemory to obtain the name of the file
+    	// Note: We use 256 for the max length of string, for if it should be any longer than 256 it could cause errors.
+    	String filename = readVirtualMemoryString(p, 256);
+    	// Check if the filename is valid to catch any errors
+    	if (filename == null) 
+    		return -1;
+    	
+    	// Placeholder return
+    	return -1;
+    }
 
+    private int handleOpen(int name) {
+    	return -1;
+    }
+    
+    private int handleRead(int fileDescriptor, int buffer, int count) {
+    	return -1;
+    }
+    
+    private int handleWrite(int fileDescriptor, int buffer, int count) {
+    	return -1;
+    }
+    
+    private int handleClose(int fileDescriptor) {
+    	return -1;
+    }
+    
+    private int handleUnlink(int name) {
+    	return -1;
+    }
+    // End of Task I's functions
+    
+    
+    // Task II function implementation:
+    
+    
+    
     /** The program being run by this process. */
     protected Coff coff;
 
