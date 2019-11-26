@@ -591,6 +591,29 @@ public class UserProcess {
     private int handleUnlink(int name) {
     	return -1;
     }
+	
+public int handleRead(int fd, int buffer, int size)
+    {
+    	int zero = 0;
+    	byte arrayBuffer[] = new byte[size];
+    	int readBytes = tbl[fd].read(arrayBuffer, zero, size);
+    	int writtenBytes = writeVirtualMemory(buffer, arrayBuffer, zero, readBytes);
+    	
+    	if(tbl[fd] == null)
+    		return -1;
+    	if(fd < 0)
+    		return -1;
+    	if(fd > 15)
+    		return -1;
+    	if(readBytes <= 0)
+    		return -1;
+    	if(writtenBytes != readBytes)
+    		return -1;
+    	
+    	return readBytes;
+    	
+    }
+	
     // End of Task I's functions
     
     
