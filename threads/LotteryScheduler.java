@@ -3,9 +3,9 @@ package nachos.threads;
 import nachos.machine.*;
 
 import java.util.TreeSet;
-
+/*
 import PriorityScheduler.PriorityQueue;
-import PriorityScheduler.ThreadState;
+import PriorityScheduler.ThreadState;*/
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -51,16 +51,16 @@ public class LotteryScheduler extends PriorityScheduler {
     //Modded to use LotteryQueue
 	return new LotteryQueue(transferPriority);//null;//
     }
-  
+    @Override
     public int getPriority(KThread thread) {
 	Lib.assertTrue(Machine.interrupt().disabled());     
 	return getThreadState(thread).getPriority();
     }
-
+    @Override
     public int getEffectivePriority(KThread thread) {
 	return getThreadState(thread).getEffectivePriority();
     }
-
+    @Override
     public void setPriority(KThread thread, int priority) {
 	Lib.assertTrue(Machine.interrupt().disabled());
 		       
@@ -71,13 +71,14 @@ public class LotteryScheduler extends PriorityScheduler {
     }
     
     //Increase Tickets ---------------------------------
+    @Override
     public boolean increasePriority(){
     	
-    	
+    	return true;
     }
-    
+    @Override
     public boolean decreasePriority(){
-    	
+    	return true;
     }
     
     /**
@@ -93,11 +94,12 @@ public class LotteryScheduler extends PriorityScheduler {
      */
     public static final int priorityMaximum = Integer.MAX_VALUE;  
     //Get Thread State Bellow 
-    protected ThreadState getThreadState(KThread thread) {
+    @Override
+    protected LotteryThreadState getThreadState(KThread thread) {
 	if (thread.schedulingState == null)
-	    thread.schedulingState = new ThreadState(thread);
+	    thread.schedulingState = new LotteryThreadState(thread);
 
-	return (ThreadState) thread.schedulingState;
+	return (LotteryThreadState) thread.schedulingState;
     }
    /*-------___--------------LotteryQueue------------------*/ 
     protected class LotteryQueue extends PriorityQueue{
@@ -114,7 +116,7 @@ public class LotteryScheduler extends PriorityScheduler {
 	    Lib.assertTrue(Machine.interrupt().disabled());
 	    getThreadState(thread).acquire(this);
 	}
-	
+	/*
 	public KThread nextThread() {
 		
 	}
@@ -127,7 +129,7 @@ public class LotteryScheduler extends PriorityScheduler {
 		if(transferPriority == false)
 			return;
 		priorityChange = true;
-	}
+	}*?
 	
 	public int getPriority(){
 		if(transferPriority == false)
@@ -148,19 +150,7 @@ public class LotteryScheduler extends PriorityScheduler {
 	    Lib.assertTrue(Machine.interrupt().disabled());
 	    // implement me (if you want)
 	}*/
-    	
-	public boolean transferPriority;
-	/** Holds value */
-	private KThread tempHolder = null;
-	/**Queue of waiting Threads*/
-	protected LinkedList<KThread> priorityWaitQueue = new LinkedList<KThread>();
-    /**Flag to check if Prioirty of thread is updated*/
-	private boolean priorityChange = false;
     }
-	
-    }
-    
-  
     /*---------------------Lottery ThreadState------------------*/ 
     protected class LotteryThreadState extends PriorityScheduler.ThreadState {
     	//Change objects above queue to match Constructer name
@@ -169,26 +159,27 @@ public class LotteryScheduler extends PriorityScheduler {
 		}
 		
 	//mod to get this ticket	
+	@Override
 	public int getPriority() {
 	    return priority;
 	}
 
     //mod to get all ticket	
+	@Override
 	public int getEffectivePriority(){
-		Int sum = priority;
+		/*Int sum = priority;
 		Int sumOther = 0;
 		from(int i = 0 to donateQueue.size())
 			LotteryQueue pq = donateQueue.
-			sumOther += *
+			sumOther += *;*/
+		return 1;
 	}
-	
+	@Override
 	public void setPriority(int priority) {
-		//sets priority
 	    this.priority = priority;
-	    
-	    // implement me
 	}
 	//mod for lottery queue
+	@Override
 	public void waitForAccess(PriorityQueue waitQueue) {
 		 Lib.assertTrue(Machine.interrupt().disabled());
 
@@ -198,16 +189,11 @@ public class LotteryScheduler extends PriorityScheduler {
 		 waitQueue.priorityWaitQueue.add(thread);
 	    // implement me
 	}
-
+	//@Override
 	public void acquire(LotteryQueue waitQueue) {
 	this.donateQueue.add(waitQueue);
 	}	
-	
-	protected KThread thread;
-	/** The priority of the associated thread. */
-	protected int priority;
-	/**A linked list of PriorityQueues that donate resources to*/
-	protected LinkedList<PriorityQueue> donateQueue = new LinkedList<PriorityQueue>();
-  
-    
+
+	protected Random random = new Random(25);
+}
 }
