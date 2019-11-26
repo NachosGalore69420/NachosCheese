@@ -660,14 +660,7 @@ public class UserProcess {
     	return -1;
     }
     
-    private int handleRead(int fileDescriptor, int buffer, int count) {
-    	return -1;
-    }
-    
-    private int handleWrite(int fileDescriptor, int buffer, int count) {
-    	return -1;
-    }
-    
+
     private int handleClose(int fileDescriptor) {
     	return -1;
     }
@@ -680,10 +673,10 @@ private int handleRead(int fd, int buffer, int size)
     {
     	int zero = 0;
     	byte arrayBuffer[] = new byte[size];
-    	int readBytes = tbl[fd].read(arrayBuffer, zero, size);
+    	int readBytes = Ofile[fd].read(arrayBuffer, zero, size);//tbl[fd].read(arrayBuffer, zero, size);
     	int writtenBytes = writeVirtualMemory(buffer, arrayBuffer, zero, readBytes);
     	
-    	if(tbl[fd] == null)
+    	if(Ofile[fd] == null)//tbl[fd] == null)
     		return -1;
     	if(fd < 0)
     		return -1;
@@ -701,7 +694,7 @@ private int handleRead(int fd, int buffer, int size)
 private int handleWrite(int fd, int buffer, int size)
     {
     	int zero = 0;
-    	if(tbl[fd] == null)
+    	if(Ofile[fd] == null)//tbl[fd] == null)
     		return -1;
     	if(fd < 0)
     		return -1;
@@ -742,5 +735,7 @@ private int handleWrite(int fd, int buffer, int size)
 	private static int pIDs = 0;
 	private HashMap<Integer, OpenFile> allFile;
 	private List<Integer> desc;
-	public OpenFile[] tbl;
+	//public OpenFile[] tbl;
+	public OpenFile [] OFile; //record file use
+	
 }
