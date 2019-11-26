@@ -4,6 +4,7 @@ import nachos.machine.*;
 import nachos.threads.*;
 import nachos.userprog.*;
 
+import java.util.*;
 /**
  * A kernel that can support multiple user processes.
  */
