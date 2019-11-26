@@ -407,7 +407,7 @@ public class UserProcess {
 		return false;
 		}
 		//Add Page to User Process to Use
-		pageTable[i] = new TranslationEntry(i, pagePhysical, true, false, false, false);	
+		pageTable[i] = new TranslationEntry(i,physPage, true,false,false,false);
 	}
 	
 	
@@ -537,9 +537,9 @@ public class UserProcess {
 	case syscallJoin:
 		return handleJoin(a0, a1);
 	case syscallClose:
-		return handleClose();
+		return handleClose(1);//Temp
 	case syscallUnlink:
-		return handleUnlink();
+		return handleUnlink(1);//Temp
 
 	default:
 	    Lib.debug(dbgProcess, "Unknown syscall " + syscall);
@@ -673,10 +673,10 @@ private int handleRead(int fd, int buffer, int size)
     {
     	int zero = 0;
     	byte arrayBuffer[] = new byte[size];
-    	int readBytes = Ofile[fd].read(arrayBuffer, zero, size);//tbl[fd].read(arrayBuffer, zero, size);
+    	int readBytes = OFile[fd].read(arrayBuffer, zero, size);//tbl[fd].read(arrayBuffer, zero, size);
     	int writtenBytes = writeVirtualMemory(buffer, arrayBuffer, zero, readBytes);
     	
-    	if(Ofile[fd] == null)//tbl[fd] == null)
+    	if(OFile[fd] == null)//tbl[fd] == null)
     		return -1;
     	if(fd < 0)
     		return -1;
@@ -694,7 +694,7 @@ private int handleRead(int fd, int buffer, int size)
 private int handleWrite(int fd, int buffer, int size)
     {
     	int zero = 0;
-    	if(Ofile[fd] == null)//tbl[fd] == null)
+    	if( OFile[fd] == null)//tbl[fd] == null)
     		return -1;
     	if(fd < 0)
     		return -1;
@@ -704,7 +704,7 @@ private int handleWrite(int fd, int buffer, int size)
     	byte arrayBuffer[] = new byte[size];
     	int readBytes = readVirtualMemory(buffer, arrayBuffer);
     	
-    	return tbl[fd].write(arrayBuffer, zero, readBytes);
+    	return OFile[fd].write(arrayBuffer, zero, readBytes);//tbl[fd].write(arrayBuffer, zero, readBytes);
     	
     }
 	
