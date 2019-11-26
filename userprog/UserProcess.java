@@ -6,6 +6,7 @@ import nachos.userprog.*;
 import java.util.HashMap;
 import java.util.List;
 import java.io.EOFException;
+import java.util.Random;
 
 /**
  * Encapsulates the state of a user process that is not contained in its
@@ -19,28 +20,57 @@ import java.io.EOFException;
  * @see	nachos.vm.VMProcess
  * @see	nachos.network.NetProcess
  */
+
+class child {
+	public
+		UserProcess child;
+		int cStat;
+		boolean isNew;
+		child() {
+			this.cStat = -Integer.MAX_VALUE;
+			isNew = true;
+		}
+		void cStat(int s) {
+			cStat = s;
+			isNew = false;
+		}
+}
+
+
 public class UserProcess {
     /**
      * Allocate a new process.
      */
 	private static final int root = 1;
 	private static int MathRand = root;
-	
-	
+	private child Child;
+	//keep track of chilren
+	private HashMap<Integer, child> hm;
+	private UThread ut;
     public UserProcess() {
+    //every process ID must be unique
     pID = ++pIDs;
-    
+    //record open/used files
+    OFile = new OpenFile[16];
+    OFile[0] = UserKernel.console.openForReading();
+    OFile[1] = UserKernel.console.openForReading();
 	int numPhysPages = Machine.processor().getNumPhysPages();
 	pageTable = new TranslationEntry[numPhysPages];
 	for (int i=0; i<numPhysPages; i++)
 	    pageTable[i] = new TranslationEntry(i,i, true,false,false,false);
-	    
-	tbl = new OpenFile[16];
-	//UserKernel can support mult user processes. openForReading() returns a file that can read this console.
-	tbl[0] = UserKernel.console.openForReading();
-	//openForWriting method can write to this console. will write it as a file
-	tbl[1] = UserKernel.console.openForWriting();
     }
+    
+    boolean isParent() {
+    	if (Child != null)
+    		return true;
+    	return false;
+    }
+    int genRand() {
+    	Random rand = new Random();
+    	int randInt = rand.nextInt(10000);
+    	return randInt;
+    }
+    
     
     /**
      * Allocate and return a new process of the correct class. The class name
@@ -495,36 +525,29 @@ public class UserProcess {
      * @param	a3	the fourth syscall argument.
      * @return	the value to be returned to the user.
      */
+	//Task 3 Start
     public int handleSyscall(int syscall, int a0, int a1, int a2, int a3) {
-    	switch (syscall) {
-    	case syscallHalt:
-    	    return handleHalt();
-    	case syscallExit:
-    		return syscallExit();
-    	case syscallExec:
-    		return syscallExit();
-    	case syscallJoin:
-    		return syscallJoin(); 
-    	case syscallCreate:
-    		return syscallCreate();
-    	case syscallOpen:
-    		return syscallOpen();
-    	case syscallRead:
-    		return syscallRead()
-    	case syscallWrite:
-    		return syscallWrite();
-    	case syscallClose:
-    		return syscallClose();
-    	case syscallUnlink:
-    		return syscallUnlink();
+	switch (syscall) {
+	case syscallHalt:
+	    return handleHalt();
+	case syscallExit:
+		handleExit(a0);
+	case syscallExec:
+		return handleExec(a0, a1, a2);
+	case syscallJoin:
+		return handleJoin(a0, a1);
+	case syscallClose:
+		return handleClose();
+	case syscallUnlink:
+		return handleUnlink();
 
-    	default:
-    	    Lib.debug(dbgProcess, "Unknown syscall " + syscall);
-    	    Lib.assertNotReached("Unknown system call!");
-    	}
-    	return 0;
-
+	default:
+	    Lib.debug(dbgProcess, "Unknown syscall " + syscall);
+	    Lib.assertNotReached("Unknown system call!");
+	}
+	return 0;
     }
+    
 
     /**
      * Handle a user exception. Called by
@@ -534,6 +557,67 @@ public class UserProcess {
      *
      * @param	cause	the user exception that occurred.
      */
+	
+	 private void handleExit(int status) { 
+    	//check for a child process
+    	if(isParent()) 
+    		this.Child.cStat = status;
+    	//bc we have 16 file locations in opened files
+    	int i = 0;
+    	while(i < 16) {
+    		handleClose(i);
+    		i++;}
+    	//unload all sections
+    	this.unloadSections();
+    	if(root == this.MathRand)
+    		Kernel.kernel.terminate();
+    	else 
+    		KThread.finish(); Lib.assertNotReached();
+    }
+
+  private int handleExec(int namePtr, int argc, int argv) {
+    	if(namePtr < 0 || argc < 0 || argv < 0 || readVirtualMemoryString(namePtr, 256) == null) 
+    		return -1;
+    	String ff = readVirtualMemoryString(namePtr, 256);
+    	int i = 0; int bytez; byte bytezz[]; String strings[];
+    	bytezz = new byte[4]; //this is for 
+    	strings = new String[argc]; //argc specifies the number of arguments to be passed to child
+    	while(i < argc) {
+    		bytez = readVirtualMemory(argv + i*4, bytezz);
+    		if(bytez != 4) return -1;
+    		//get address of next file
+    		if(readVirtualMemoryString(Lib.bytesToInt(bytezz, 0), 256) == null) return -1;
+    		strings[i] = readVirtualMemoryString(Lib.bytesToInt(bytezz, 0), 256);
+    		if(i+1 == argc) {
+    		    child chile = new child();
+    		    chile.child = UserProcess.newUserProcess();
+    		    if(chile.child.execute(ff, strings)) {
+    		    	hm.put(chile.child.MathRand, chile);
+    		    	return chile.child.MathRand;
+    		    }
+    		}
+    		i++;
+    	}
+    	return -1;
+    }
+    //join will take the arguments of child process ID and the address of that status
+    private int handleJoin(int procID, int addr) {
+    	//as before we'll virtually pass bytes
+    	if(procID < 0 || addr < 0 || !hm.containsKey(procID))
+    		return -1;
+    	int bytez; byte barr[]; child newC = new child();
+    	newC = hm.get(procID);
+    	//now join
+    	newC.child.ut.join(); hm.remove(procID);
+    	if(!newC.isNew) return 0;
+    	barr = new byte[4];
+    	barr = Lib.bytesFromInt(newC.cStat);
+    	bytez = writeVirtualMemory(addr, barr);
+    	if(bytez != 4)
+    		return 0;
+    	return 1;
+    }
+	
     public void handleException(int cause) {
     	Processor processor = Machine.processor();
 
@@ -555,7 +639,7 @@ public class UserProcess {
     	    Lib.assertNotReached("Unexpected exception");
     	}
     }
-    
+    //Task 3 end
     /* Task I function implementation:
      * Our functions are private so that it can only be called on by handleSyscall (can't be accessed directly by user)
      * If any error should occur, always return -1.
