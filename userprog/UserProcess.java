@@ -34,6 +34,12 @@ public class UserProcess {
 	pageTable = new TranslationEntry[numPhysPages];
 	for (int i=0; i<numPhysPages; i++)
 	    pageTable[i] = new TranslationEntry(i,i, true,false,false,false);
+	    
+	tbl = new OpenFile[16];
+	//UserKernel can support mult user processes. openForReading() returns a file that can read this console.
+	tbl[0] = UserKernel.console.openForReading();
+	//openForWriting method can write to this console. will write it as a file
+	tbl[1] = UserKernel.console.openForWriting();
     }
     
     /**
