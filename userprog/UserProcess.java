@@ -592,7 +592,7 @@ public class UserProcess {
     	return -1;
     }
 	
-public int handleRead(int fd, int buffer, int size)
+private int handleRead(int fd, int buffer, int size)
     {
     	int zero = 0;
     	byte arrayBuffer[] = new byte[size];
@@ -611,6 +611,23 @@ public int handleRead(int fd, int buffer, int size)
     		return -1;
     	
     	return readBytes;
+    	
+    }
+	
+private int handleWrite(int fd, int buffer, int size)
+    {
+    	int zero = 0;
+    	if(tbl[fd] == null)
+    		return -1;
+    	if(fd < 0)
+    		return -1;
+    	if(fd > 15)
+    		return -1;
+    	
+    	byte arrayBuffer[] = new byte[size];
+    	int readBytes = readVirtualMemory(buffer, arrayBuffer);
+    	
+    	return tbl[fd].write(arrayBuffer, zero, readBytes);
     	
     }
 	
