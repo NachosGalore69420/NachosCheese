@@ -542,7 +542,7 @@ public class UserProcess {
 	case syscallClose:
 		return handleClose(a0);
 	case syscallUnlink:
-		return handleUnlink(1);//Temp
+		return handleUnlink(a0);//Temp
 	case syscallCreate:
 		return handleCreate(a0);
 	case syscallOpen:
