@@ -3,12 +3,8 @@ package nachos.threads;
 import nachos.machine.*;
 
 import java.util.TreeSet;
-/*
-import PriorityScheduler.PriorityQueue;
-import PriorityScheduler.ThreadState;
-import LotteryScheduler.ThreadState;*/
+
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Random;
@@ -109,19 +105,66 @@ public class LotteryScheduler extends PriorityScheduler {
    /*-------___--------------LotteryQueue------------------*/ 
     protected class LotteryQueue extends PriorityQueue{
     //Holds the Thread and its own Ticket
-    private java.util.HashMap<LotteryThreadState,Integer> lotteryWaitQueue;	
+    private java.util.HashMap<LotteryThreadState,Integer> lotteryWaitQueue = new java.util.HashMap<LotteryThreadState, Integer>();	
     boolean transferPriority;
-    private int sum;
-	boolean sumChange;
-    
+    private int sum = 0;
+	boolean sumChange = false;
+	public int sumTot = 0;
+	private ThreadState acquire;
     	LotteryQueue(boolean transferPriority){
-			/*waitQueue = new java.util.HashMap<ThreadState, Integer>();
+    		/*waitQueue = new java.util.HashMap<ThreadState, Integer>();
 			this.transferPriority = transferPriority;
 			sum = 0;
 			sumChange = true;*/
     		super(transferPriority);
     	}
- 
+
+    	public KThread nextThread() {
+    		Lib.assertTrue(Machine.interrupt().disabled());
+    		
+    		if (lotteryWaitQueue.isEmpty() || pickNextThread() == null)//if empty
+				return null;//exit
+    		//pick
+    		LotteryThreadState threadState = pickNextThread();
+
+    		this.lotteryWaitQueue.remove(threadState);
+    		
+			//get
+    		acquireThread(threadState.thread);
+    		return threadState.thread;
+    	}//nextThread
+    	
+		protected LotteryThreadState pickNextThread() {
+			if (lotteryWaitQueue.size() == 0) {
+				return null;
+			}
+			
+			LotteryThreadState threadStateResult = null;
+			Random rand = new Random();
+
+			int lottery = rand.nextInt(lotteryWaitQueue.size()) + 1;
+			Iterator<LotteryThreadState> Iter = lotteryWaitQueue.keySet().iterator();
+			
+			while (lottery > sumTot && Iter.hasNext()) {
+				threadStateResult = Iter.next();
+				sumTot += lotteryWaitQueue.get(threadStateResult).intValue();
+			}
+			return threadStateResult;
+		}//pickNextThread
+    	
+		/*private int threadTickets(LotteryThreadState ts) {
+			if (transferPriority) 
+				return ts.getEffectivePriority();//Lottry Thread
+			else 
+				return ts.getPriority();//From Priority
+			}*/
+		
+		
+		public void acquireThread(KThread thread) {
+			Lib.assertTrue(Machine.interrupt().disabled());
+			getThreadState(thread).acquire(this);
+		}
+
     }
     /*---------------------Lottery ThreadState------------------*/ 
     protected class LotteryThreadState extends PriorityScheduler.ThreadState {
@@ -129,6 +172,14 @@ public class LotteryScheduler extends PriorityScheduler {
 		public LotteryThreadState(KThread thread) {
 			super(thread);
 		}
-
-}
+		
+		@Override
+		public int getEffectivePriority() {
+		    // Count the Sum
+			
+		return 1;
+		}//Get Effective
+		
+    }//LotteryThread End
+    protected KThread thread;
 }
