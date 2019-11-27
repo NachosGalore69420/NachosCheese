@@ -49,8 +49,8 @@ public class LotteryScheduler extends PriorityScheduler {
      *					to the owning thread.
      * @return	a new lottery thread queue.
      */
+    //Modded for LotteryQueue
     public ThreadQueue newThreadQueue(boolean transferPriority) {
-    //Modded to use LotteryQueue
 	return new LotteryQueue(transferPriority);//null;//
     }
 
@@ -106,11 +106,12 @@ public class LotteryScheduler extends PriorityScheduler {
 	return (LotteryThreadState) thread.schedulingState;
     }
     
-   /*-------___--------------LotteryQueue------------------*/ 
+   /*-----------------------LotteryQueue------------------*/ 
     protected class LotteryQueue extends PriorityQueue{
     //Holds the Thread and its own Ticket
     private java.util.HashMap<LotteryThreadState,Integer> lotteryWaitQueue;	
     boolean transferPriority;
+    private boolean priorityChange = false;
     private int sum;
 	boolean sumChange;
     
@@ -121,6 +122,20 @@ public class LotteryScheduler extends PriorityScheduler {
 			sumChange = true;*/
     		super(transferPriority);
     	}
+    	
+    	public KThread nextThread() {
+    		return null;
+    	}
+    	
+    	protected ThreadState pickNextThread() {
+			return null;
+		}
+    	
+    	public void changedPriority(){
+    		if(transferPriority == false)
+    			return;
+    		priorityChange = true;
+    	}
  
     }
     /*---------------------Lottery ThreadState------------------*/ 
@@ -130,5 +145,34 @@ public class LotteryScheduler extends PriorityScheduler {
 			super(thread);
 		}
 
-}
+		@Override
+		public int getEffectivePriority() {
+			return getEffectivePriority(new HashSet<LotteryThreadState>());
+		}
+		
+		private int getEffectivePriority(HashSet<LotteryThreadState> set) {
+			return 0;
+		}
+		
+		@Override
+		public void setPriority(int priority) {
+		    this.priority = priority;
+		}
+		/*
+		
+		//Mod to add to lotteryWaitQueue
+		//@Override
+		public void waitForAccess(LotteryQueue waitQueue) {
+			 Lib.assertTrue(Machine.interrupt().disabled());
+
+			 waitQueue.changedPriority();
+			 
+			 //waitQueue.lotteryWaitQueue.put(getThreadState(thread),);
+		}
+		//@Override
+		public void acquire(LotteryQueue waitQueue) {
+		this.donateQueue.add(waitQueue);
+		}*/
+		
+    }//Lottery ThreadState
 }
