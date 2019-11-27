@@ -476,7 +476,10 @@ public class UserProcess {
      */
     private int handleHalt() {
     	// We must check if the process calling halt is the "root," or the first process created.
-    	// ADD CODE HERE
+    	// ADD CODE HERE (use our established variable MathRand, and return 0 if not root)
+    	if (this.MathRand != root)
+    		// Non-root can't halt the system. Therefore, ignore request and return 0.
+    		return 0;
 
 	Machine.halt();
 	
@@ -537,9 +540,17 @@ public class UserProcess {
 	case syscallJoin:
 		return handleJoin(a0, a1);
 	case syscallClose:
-		return handleClose(1);//Temp
+		return handleClose(a0);
 	case syscallUnlink:
 		return handleUnlink(1);//Temp
+	case syscallCreate:
+		return handleCreate(a0);
+	case syscallOpen:
+		return handleOpen(a0);
+	case syscallRead:
+		return handleRead(a0, a1, a2);
+	case syscallWrite:
+		return handleWrite(a0, a1, a2);
 
 	default:
 	    Lib.debug(dbgProcess, "Unknown syscall " + syscall);
@@ -645,24 +656,73 @@ public class UserProcess {
      * If any error should occur, always return -1.
      */
     private int handleCreate(int p) {
-    	// First use the char pointer argument and readVirtualMemory to obtain the name of the file
+    	// First we use the char pointer argument and readVirtualMemory to obtain the name of the file
     	// Note: We use 256 for the max length of string, for if it should be any longer than 256 it could cause errors.
     	String filename = readVirtualMemoryString(p, 256);
     	// Check if the filename is valid to catch any errors
     	if (filename == null) 
     		return -1;
-    	
-    	// Placeholder return
-    	return -1;
+    	// We use our array OFile to check for an available open file. Max amount of files in our system is 16.
+    	int fileDescriptor = -1;
+    	for (int i = 0; i < 16; i++) {
+    		if (OFile[i] == null) {
+    			fileDescriptor = i;
+    			break;
+    		}
+    	}
+    	// If no available file (nothing assigned to variable) return -1.
+    	if (fileDescriptor == -1)
+    		return -1;
+    	// Create the file. Second argument should be set to true so that it creates when file does not exist.
+    	OpenFile newFile = ThreadedKernel.fileSystem.open(filename, true);
+    	if (newFile == null)
+    	    return -1;
+    	// Assign newFile to our available slot.
+    	OFile[fileDescriptor] = newFile;
+    	// Return file descriptor at end
+    	return fileDescriptor;
     }
 
-    private int handleOpen(int name) {
-    	return -1;
+    private int handleOpen(int p) {
+    	// This function checks errors very similarly to our create function.
+    	// Main difference between this and create is that a file is not created, as implied by name.
+    	String filename = readVirtualMemoryString(p, 256);
+    	if (filename == null)
+    		return -1;
+    	int fileDescriptor = -1;
+    	// Again, loop to check that there are used files in the system.
+    	for (int i = 0; i < 16; i++) {
+    		if (OFile[i] == null) {
+    			fileDescriptor = i;
+    			break;
+    		}
+    	}
+    	if (fileDescriptor == -1)
+    		return -1;
+    	// This time, the second argument for open() is passed as false, as we are not creating the file.
+    	OpenFile newFile = ThreadedKernel.fileSystem.open(filename, false);
+    	// If doesn't exist, return -1.
+    	if (newFile == null)
+    		return -1;
+    	OFile[fileDescriptor] = newFile;
+    	return fileDescriptor;
     }
     
 
     private int handleClose(int fileDescriptor) {
-    	return -1;
+    	// Validate the file descriptor by making sure it is within the range of files. (in this case, range is 0 to 15 because of 16 files)
+    	if (fileDescriptor < 0 || fileDescriptor > 15)
+    		// Error, outside range.
+    		return -1;
+    	// Then check that file at file descriptor is not null
+    	if (OFile[fileDescriptor] == null)
+    		return -1;
+    	// If everything is ok to close, run close.
+    	// Other functions should ensure that any write data from a file is successfully flushed before closing.
+    	OFile[fileDescriptor].close();
+    	// Set file slot to null so that it may be reused.
+    	OFile[fileDescriptor] = null;
+    	return 0;
     }
     
     private int handleUnlink(int name) {
