@@ -724,10 +724,6 @@ public class UserProcess {
     	OFile[fileDescriptor] = null;
     	return 0;
     }
-    
-    private int handleUnlink(int name) {
-    	return -1;
-    }
 	
 private int handleRead(int fd, int buffer, int size)
     {
@@ -766,6 +762,14 @@ private int handleWrite(int fd, int buffer, int size)
     	
     	return OFile[fd].write(arrayBuffer, zero, readBytes);//tbl[fd].write(arrayBuffer, zero, readBytes);
     	
+    }
+	
+private int handleUnlink(int fd)
+    {
+    	String ff = readVirtualMemoryString(fd, 255);
+    	int change = ThreadedKernel.fileSystem.remove(ff) ? 0 : -1;
+	
+	return change;
     }
 	
     // End of Task I's functions
