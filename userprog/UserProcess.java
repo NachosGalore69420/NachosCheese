@@ -56,8 +56,8 @@ public class UserProcess {
     OFile[1] = UserKernel.console.openForWriting();
 	int numPhysPages = Machine.processor().getNumPhysPages();
 	pageTable = new TranslationEntry[numPhysPages];
-	for (int i=0; i<numPhysPages; i++)
-	    pageTable[i] = new TranslationEntry(i,i, true,false,false,false);
+	for (int x=0; x<numPhysPages; x++)
+	    pageTable[x] = new TranslationEntry(x,x, true,false,false,false);
     }
     
     boolean isParent() {
