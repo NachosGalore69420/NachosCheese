@@ -766,7 +766,7 @@ private int handleWrite(int fd, int buffer, int size)
 	
 private int handleUnlink(int fd)
     {
-    	String ff = readVirtualMemoryString(fd, 255);
+    	String ff = readVirtualMemoryString(fd, 256);
     	int change = ThreadedKernel.fileSystem.remove(ff) ? 0 : -1;
 	
 	return change;
