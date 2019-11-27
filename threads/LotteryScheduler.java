@@ -109,19 +109,22 @@ public class LotteryScheduler extends PriorityScheduler {
     boolean transferPriority;
     private int sum = 0;
 	boolean sumChange = false;
-	public int sumTot = 0;
+	public int sumTot = 0;//adds up the whole lottery
 	private ThreadState acquire;
     	LotteryQueue(boolean transferPriority){
+    		
     		/*waitQueue = new java.util.HashMap<ThreadState, Integer>();
 			this.transferPriority = transferPriority;
 			sum = 0;
 			sumChange = true;*/
     		super(transferPriority);
+    		this.transferPriority = transferPriority;
+    		//System.out.println(" start ");
     	}
 
     	public KThread nextThread() {
-    		Lib.assertTrue(Machine.interrupt().disabled());
-    		
+    		//Lib.assertTrue(Machine.interrupt().disabled());
+    		//System.out.println(" nextThread "+lotteryWaitQueue.toString());
     		if (lotteryWaitQueue.isEmpty() || pickNextThread() == null)//if empty
 				return null;//exit
     		//pick
@@ -135,14 +138,15 @@ public class LotteryScheduler extends PriorityScheduler {
     	}//nextThread
     	
 		protected LotteryThreadState pickNextThread() {
-			if (lotteryWaitQueue.size() == 0) {
+			//System.out.println(" pickNextThread "+lotteryWaitQueue.toString());
+			if (lotteryWaitQueue.isEmpty()) {
 				return null;
 			}
 			
 			LotteryThreadState threadStateResult = null;
 			Random rand = new Random();
 
-			int lottery = rand.nextInt(lotteryWaitQueue.size()) + 1;
+			int lottery = rand.nextInt(getTicketCurr()) + 1;
 			Iterator<LotteryThreadState> Iter = lotteryWaitQueue.keySet().iterator();
 			
 			while (lottery > sumTot && Iter.hasNext()) {
@@ -152,6 +156,17 @@ public class LotteryScheduler extends PriorityScheduler {
 			return threadStateResult;
 		}//pickNextThread
     	
+		private int getTicketCurr(){
+			if(sumChange == true)
+				return sum;
+			else
+				return calcTickSum();
+		}
+		
+		private int calcTickSum(){
+			return 1;
+		}
+		
 		/*private int threadTickets(LotteryThreadState ts) {
 			if (transferPriority) 
 				return ts.getEffectivePriority();//Lottry Thread
@@ -171,15 +186,33 @@ public class LotteryScheduler extends PriorityScheduler {
     	//Change objects above queue to match Constructer name
 		public LotteryThreadState(KThread thread) {
 			super(thread);
+			//System.out.println(" start ");
+		}
+		@Override
+		public void setPriority(int priority) {
+			this.priority = priority;
 		}
 		
 		@Override
 		public int getEffectivePriority() {
 		    // Count the Sum
 			
-		return 1;
+		return priority;
 		}//Get Effective
 		
+		//@Override
+		public void waitForAccess(LotteryQueue LotteryThreadState) {
+			 Lib.assertTrue(Machine.interrupt().disabled());
+			 //  LotteryThreadState.put(thread ,Priority ,Gen a ticket); 
+		    
+		}
+		
     }//LotteryThread End
-    protected KThread thread;
+	/** The thread with which this object is associated. */	   
+	protected KThread thread;
+	/** The priority of the associated thread. */
+	protected int priority = priorityDefault;
+	/**A linked list of PriorityQueues that donate resources to*/
+	protected LinkedList<PriorityQueue> donateQueue = new LinkedList<PriorityQueue>();
+   
 }

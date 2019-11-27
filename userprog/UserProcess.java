@@ -1,5 +1,4 @@
 package nachos.userprog;
-
 import nachos.machine.*;
 import nachos.threads.*;
 import nachos.userprog.*;
@@ -797,7 +796,6 @@ private int handleUnlink(int fd)
     private static final char dbgProcess = 'a';
     private int pID;
 	private static int pIDs = 0;
-	private HashMap<Integer, OpenFile> allFile;
 	private List<Integer> desc;
 	//public OpenFile[] tbl;
 	public OpenFile [] OFile; //record file use
