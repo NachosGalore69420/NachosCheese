@@ -5,10 +5,9 @@ import nachos.machine.*;
 import java.util.TreeSet;
 /*
 import PriorityScheduler.PriorityQueue;
-import PriorityScheduler.ThreadState;*/
-
-import LotteryScheduler.ThreadState;
-
+import PriorityScheduler.ThreadState;
+import LotteryScheduler.ThreadState;*/
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -54,15 +53,29 @@ public class LotteryScheduler extends PriorityScheduler {
     //Modded to use LotteryQueue
 	return new LotteryQueue(transferPriority);//null;//
     }
+
+    //Increase Tickets -----------
     @Override
-    public int getPriority(KThread thread) {
-	Lib.assertTrue(Machine.interrupt().disabled());     
-	return getThreadState(thread).getPriority();
+    public boolean increasePriority(){
+    Lib.assertTrue(Machine.interrupt().disabled());
+    KThread thread = KThread.currentThread();
+    int priority = getPriority(thread);		
+    	if(priority == priorityMaximum)
+    		return false;
+	setPriority(thread, priority + 1);
+	return true;
     }
     @Override
-    public int getEffectivePriority(KThread thread) {
-	return getThreadState(thread).getEffectivePriority();
+    public boolean decreasePriority(){
+    Lib.assertTrue(Machine.interrupt().disabled());
+    KThread thread = KThread.currentThread();
+    int priority = getPriority(thread);	
+    	if(priority == priorityMinimum)
+    		return false;
+	setPriority(thread, priority - 1);
+	return true;
     }
+    
     @Override
     public void setPriority(KThread thread, int priority) {
 	Lib.assertTrue(Machine.interrupt().disabled());
@@ -72,27 +85,6 @@ public class LotteryScheduler extends PriorityScheduler {
 	
 	getThreadState(thread).setPriority(priority);
     }
-    
-    //Increase Tickets ---------------------------------
-    @Override
-    public boolean increasePriority(){
-    Lib.assertTrue(Machine.interrupt().disabled());
-    int priority = getPriority(KThread.currentThread());	
-    	if(priority == priorityMaximum)
-    		return false;
-	setPriority(thread, priority + 1);
-	return true;
-    }
-    @Override
-    public boolean decreasePriority(){
-    Lib.assertTrue(Machine.interrupt().disabled());
-    int priority = getPriority(KThread.currentThread());	
-    	if(priority == priorityMinimum)
-    		return false;
-	setPriority(thread, priority - 1);
-	return true;
-    }
-    
     /**
      * The default priority for a new thread. Do not change this value.
      */
@@ -113,101 +105,23 @@ public class LotteryScheduler extends PriorityScheduler {
 
 	return (LotteryThreadState) thread.schedulingState;
     }
+    
    /*-------___--------------LotteryQueue------------------*/ 
     protected class LotteryQueue extends PriorityQueue{
     //Holds the Thread and its own Ticket
     private java.util.HashMap<LotteryThreadState,Integer> lotteryWaitQueue;	
-    private ThreadState acquired;
     boolean transferPriority;
     private int sum;
 	boolean sumChange;
     
     	LotteryQueue(boolean transferPriority){
-			waitQueue = new java.util.HashMap<ThreadState, Integer>();
+			/*waitQueue = new java.util.HashMap<ThreadState, Integer>();
 			this.transferPriority = transferPriority;
 			sum = 0;
-			sumChange = true;
+			sumChange = true;*/
+    		super(transferPriority);
     	}
-    /*
-	public void waitForAccess(KThread thread) {
-	    Lib.assertTrue(Machine.interrupt().disabled());
-	    getThreadState(thread).waitForAccess(this);
-	}
-	
-	public void acquire(KThread thread) {
-	    Lib.assertTrue(Machine.interrupt().disabled());
-	    getThreadState(thread).acquire(this);
-	}
-	
-	public KThread nextThread() {
-	    Lib.assertTrue(Machine.interrupt().disabled());
-	    
-	    if(priorityWaitQueue.isEmpty() || pickNextThread() == null)
-	    	return null;
-	    
-	    KThread nextThread = pickNextThread().thread;
-	    
-	    this.lotteryWaitQueue.remove(nextThread);
-	    
-	    KThread  tempHolder = nextThread;
-	    this.acquire(tempHolder);
-	    return tempHolder;
-	}
-	
-	public void changedPriority(){
-		if(transferPriority == false)
-			return;
-		priorityChange = true;
-	}
-	*/
-    @Override
-	protected LotteryThreadState pickNextThread() {
-		
-		if(lotteryWaitQueue.isEmpty())
-			return null;
-		//Count the total amount of tickets
-		int sumTotal = 0;
-		int num;
-		
-		//Collect Tickets
-		int i =0;
-		for(KThread thread : lotteryWaitQueue){
-			sum[i] = getThreadState(thread).getEffectivePriority();
-			sumTotal += sum[i]; 
-			i++;
-			}
-		
-		//Select Random Ticket
-
-		Random random = new Random();
-		int rand = random.nextInt(sumTicket)+1;
-		Iterator<lotteryThreadState> iter = lotteryWaitQueue.keySet().iterator();
-		while (rand > sumTotal && threadStateIterator.hasNext()) {
-			if(rand < sum[i++])
-				return getThreadState(thread);
-		
-		//If failed
-		return null;	
-	}
-    }
-
-/*
-	protected int getPriority(){
-		if(transferPriority == false)
-			return priorityMinimum;
-		
-		int tempPriority, effectivePriority = priorityMinimum;
-		
-		for(int i = 0; i < lotteryWaitQueue.size(); i++){
-			tempPriority = getThreadState(lotteryWaitQueue.get(i)).getEffectivePriority();
-			if(tempPriority > effectivePriority) {
-				effectivePriority = tempPriority;
-			}
-		}
-	return effectivePriority;
-	}
-	*/
-
+ 
     }
     /*---------------------Lottery ThreadState------------------*/ 
     protected class LotteryThreadState extends PriorityScheduler.ThreadState {
@@ -215,41 +129,6 @@ public class LotteryScheduler extends PriorityScheduler {
 		public LotteryThreadState(KThread thread) {
 			super(thread);
 		}
-	/*	
-	//mod to get this ticket	
-	@Override
-	public int getPriority() {
-	    return priority;
-	}
-	 */
-    //mod to get all ticket	
-	@Override
-	public int getEffectivePriority() {
-		return getEffectivePriority(new HashSet<LotteryThreadState>());
-	}
-	
-	private int getEffectivePriority(HashSet<LotteryThreadState> set) {
-		return 0;
-	}
-	
-	/*
-	@Override
-	public void setPriority(int priority) {
-	    this.priority = priority;
-	}
-	//mod for lottery queue
-	@Override
-	public void waitForAccess(LotteryQueue waitQueue) {
-		 Lib.assertTrue(Machine.interrupt().disabled());
-
-		 waitQueue.changedPriority();
-		 
-		 waitQueue.priorityWaitQueue.add(thread);
-	}
-	//@Override
-	public void acquire(LotteryQueue waitQueue) {
-	this.donateQueue.add(waitQueue);
-	}	*/
 
 }
 }
